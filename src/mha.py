@@ -4,10 +4,7 @@ from torch import nn
 from torch import Tensor
 import torch.nn.functional as F
 
-DEVICE = torch.device("cpu")
-if torch.cuda.is_available():
-  DEVICE = torch.device("cuda")
-print(f"Torch using device {DEVICE}")
+from device import DEVICE
 
 '''
 Multi-Head Attention

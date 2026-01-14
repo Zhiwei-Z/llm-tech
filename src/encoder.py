@@ -4,14 +4,9 @@ from torch import nn
 from torch import Tensor
 import torch.nn.functional as F
 
+from device import DEVICE
 from mha import MHA
 from res_net import ResNet
-
-
-DEVICE = torch.device("cpu")
-if torch.cuda.is_available():
-  DEVICE = torch.device("cuda")
-print(f"Torch using device {DEVICE}")
 
 '''
 Implements a single encoder layer from the classical Transformer architecture

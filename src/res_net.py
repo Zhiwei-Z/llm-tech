@@ -4,12 +4,8 @@ from torch import nn
 from torch import Tensor
 import torch.nn.functional as F
 
+from device import DEVICE
 from mha import MHA
-
-DEVICE = torch.device("cpu")
-if torch.cuda.is_available():
-  DEVICE = torch.device("cuda")
-print(f"Torch using device {DEVICE}")
 
 '''
 Residual Network: classical ffn component of a transformer

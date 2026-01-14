@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import numpy as np
 import torch
 from torch import nn
@@ -5,53 +6,60 @@ from torch import Tensor
 import torch.nn.functional as F
 
 from device import DEVICE
-from mha import MHA
-from res_net import ResNet
+from mha import MHA, MHAConfig
+from res_net import ResNet, ResNetConfig
+
+@dataclass
+class EncoderLayerConfig:
+  mha_config: MHAConfig
+  res_net_config: ResNetConfig
 
 '''
-Implements a single encoder layer from the classical Transformer architecture
-
-* d_model = num_head * d_k, where d_k is the dimension of a q,k,v vector
-* num_head: number of heads
-* res_net_hidden_dims: dimensions of the hidden layers in the residual network
-* activation_module_class: activation used inside res_net
+Implements a single encoder layer from the classical Transformer architecture.
+An encoder layer consists of two main sub-layers: Multi-Head Attention and a
+Position-wise Feed-Forward Network. Residual connections and layer normalization
+are applied after each sub-layer.
 '''
-
 class EncoderLayer(nn.Module):
     def __init__(self,
-                 d_model: int,
-                 num_head: int,
-                 res_net_hidden_dims: list[int],
-                 activation_module_class):
+                 encoder_layer_config: EncoderLayerConfig
+                 ):
         super().__init__()
-        self.mha = MHA(num_head, d_model, mask=None)
-        self.res_net = ResNet(d_model, res_net_hidden_dims, activation_module_class)
-        self.mha_layer_norm = nn.LayerNorm(d_model)
+        self.encoder_layer_config = encoder_layer_config
+        self.mha = MHA(encoder_layer_config.mha_config)
+        self.res_net = ResNet(encoder_layer_config.res_net_config)
+        self.mha_layer_norm = nn.LayerNorm(encoder_layer_config.mha_config.d_model)
 
-    
     def forward(self,
                 x: Tensor, # (B, s, d_model)
                 ):
-        mha_out = self.mha(x) # (B, s, d_model)
+        # In a standard Transformer encoder, the mask is None because each token
+        # in the input sequence is allowed to attend to all other tokens.
+        mha_out = self.mha(x, mask=None) # (B, s, d_model)
+
+        # Residual connection and layer normalization for the MHA sub-layer
         mha_out = self.mha_layer_norm(mha_out + x) # (B, s, d_model)
+
+        # The ResNet (FFN) sub-layer already includes its own residual connection and layer norm.
         return self.res_net(mha_out) # (B, s, d_model)
+
+@dataclass
+class EncoderConfig:
+  encoder_layer_config: EncoderLayerConfig
+  num_encoder_layers: int
 
 class Encoder(nn.Module):
     def __init__(self,
-                 num_encoder_layers: int,
-                 d_model: int,
-                 num_head: int,
-                 res_net_hidden_dims: list[int],
-                 activation_module_class):
+                 encoder_config: EncoderConfig
+                 ):
         super().__init__()
-        self.num_encoder_layers = num_encoder_layers
-        encoder_layers = [EncoderLayer(d_model, num_head, res_net_hidden_dims, activation_module_class) \
-                                for _ in range(num_encoder_layers)]
-        self.encoder_layers = nn.Sequential(*encoder_layers)
+        self.encoder_config = encoder_config
+        self._num_encoder_layers = encoder_config.num_encoder_layers
+        encoder_layers = [EncoderLayer(encoder_config.encoder_layer_config) \
+                                for _ in range(self._num_encoder_layers)]
+        self._encoder_layers = nn.Sequential(*encoder_layers)
     
     def forward(self,
                 x: Tensor, # (B, s, d_model)
                 ):
-        return self.encoder_layers(x)
-
-
+        return self._encoder_layers(x)

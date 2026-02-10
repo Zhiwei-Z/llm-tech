@@ -12,9 +12,9 @@ from res_net import ResNet, ResNetConfig
 '''
 Implements a classic sinusoidal positional encoding scheme.
 '''
-def SinusoidalPEConfig(x: Tensor, # (B, seq_length, d_model)
-                       max_seq_length: int # 10000 in the original paper
-                       ):
+def SinusoidalPE(x: Tensor, # (B, seq_length, d_model)
+                 max_seq_length: int = 10000# 10000 in the original paper
+                ):
     assert len(x.size()) == 3
     B, s, d_model = x.size()
     assert d_model % 2 == 0
@@ -29,15 +29,17 @@ def SinusoidalPEConfig(x: Tensor, # (B, seq_length, d_model)
         # Calculate the denominator
         # Using log space for numerical stability
         # Already mutiplied by -1 in the exponent to convert to the denominator
-        # (d_model // 2, 1)
+        # (d_model // 2, )
         denominator = torch.exp(-torch.log(max_seq_length) * \
                 torch.arange(0, d_model, 2, device=DEVICE) / d_model)
         
         # populate the sin part
-        pe[:, 0::2] = torch.sin(position * denominator)
+        # Shape: (s, d_model)
+        pe[:, 0::2] = torch.sin(position * denominator.unsqueeze(0))
 
         # populate the cos part
-        pe[:, 1::2] = torch.cos(position * denominator)
+        # Shape: (s, d_model)
+        pe[:, 1::2] = torch.cos(position * denominator.unsqueeze(0))
 
     # Add PE
     return x + pe.unsqueeze(0)

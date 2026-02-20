@@ -6,10 +6,10 @@ from torch import Tensor
 import torch.nn.functional as F
 
 from device import DEVICE
+from shared_config import SharedConfig
 
 @dataclass
 class ResNetConfig:
-  d_model: int
   hidden_dims: list[int] # dimensions of the intermediate layers
   activation_module_class: type # class, not instance, e.g. nn.ReLU
 
@@ -18,12 +18,13 @@ Residual Network: classical ffn component of a transformer
 '''
 class ResNet(nn.Module):
   def __init__(self,
+               shared_config: SharedConfig,
                res_net_config: ResNetConfig,
                ):
     super().__init__()
-    self.res_net_config = res_net_config
-    self._d_model = res_net_config.d_model
-    self._action_module_class = res_net_config.activation_module_class
+    self._res_net_config = res_net_config
+    self._d_model = shared_config.d_model
+    self._activation_module_class = res_net_config.activation_module_class
     all_dims = [self._d_model] + res_net_config.hidden_dims
 
     layers = []

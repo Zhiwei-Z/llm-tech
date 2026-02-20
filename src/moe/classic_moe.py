@@ -8,17 +8,19 @@ import torch.nn.functional as F
 from device import DEVICE
 from mha import MHA, MHAConfig
 from ..res_net import ResNet, ResNetConfig
+from ..shared_config import SharedConfig
 
 @dataclass
 class RouterConfig:
-    d_model: int
     num_experts: int # dimension of the output layer, represening expert weights
 
 class Router(nn.Module):
-    def __init__(self, router_config: RouterConfig):
+    def __init__(self,
+                 shared_config: SharedConfig,
+                 router_config: RouterConfig):
         super().__init__()
         self._config = router_config
-        self._d_model = router_config.d_model
+        self._d_model = shared_config.d_model
 
         self._linear = nn.Linear(self._d_model, self._config.num_experts)
 
@@ -30,13 +32,13 @@ class Router(nn.Module):
 
 @dataclass
 class ClassicMoEConfig:
-    d_model: int
     num_experts: int # total number of experts
     k: int # number of selected experts to generate the output
     expert_resnet_config: ResnetConfig # config for each expert
 
 class ClassicMoE(nn.Module):
     def __init__(self,
+                 shared_config: SharedConfig,
                  classic_moe_config: ClassicMoEConfig,
                  ):
         super().__init__()
@@ -45,8 +47,7 @@ class ClassicMoE(nn.Module):
         self._expert_resnet_config = classic_moe_config.expert_resnet_config
 
         # Set up the router
-        self._router = Router(RouterConfig(self._d_model, 
-                                           self._config.num_experts))
+        self._router = Router(shared_config, RouterConfig(self._config.num_experts))
         
         # Set up the experts
         self._experts = nn.ModuleList()

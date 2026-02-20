@@ -6,6 +6,7 @@ from torch import Tensor
 import torch.nn.functional as F
 
 from device import DEVICE
+from shared_config import SharedConfig
 
 @dataclass
 class MHAConfig:
@@ -24,13 +25,14 @@ Output: (B, s, d_model) batch_size x sequence_length x d_model
 '''
 class MHA(nn.Module):
   def __init__(self,
+               shared_config: SharedConfig,
                mha_config: MHAConfig,
                ):
     super().__init__()
     # d_model must be divisible by the number of heads.
     assert mha_config.d_model % mha_config.num_head == 0
     self._num_head = mha_config.num_head
-    self._d_model = mha_config.d_model
+    self._d_model = shared_config.d_model
     self._d_k = self._d_model // self._num_head
     
     self._qkv_proj = nn.Linear(self._d_model, self._d_model * 3)

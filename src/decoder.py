@@ -8,6 +8,7 @@ import torch.nn.functional as F
 from device import DEVICE
 from mha import MHA, CrossMHA, MHAConfig
 from res_net import ResNet, ResNetConfig
+from shared_config import SharedConfig
 
 @dataclass
 class DecoderLayerConfig:
@@ -16,20 +17,21 @@ class DecoderLayerConfig:
 
 class DecoderLayer(nn.Module):
   def __init__(self,
+               shared_config: SharedConfig,
                decoder_layer_config: DecoderLayerConfig,
                ):
     super().__init__()
 
     self._decoder_layer_config = decoder_layer_config
-    self._mha = MHA(decoder_layer_config.mha_config)
-    self._cross_mha = CrossMHA(decoder_layer_config.mha_config)
-    self._res_net = ResNet(decoder_layer_config.res_net_config)
+    self._mha = MHA(shared_config, decoder_layer_config.mha_config)
+    self._cross_mha = CrossMHA(shared_config, decoder_layer_config.mha_config)
+    self._res_net = ResNet(shared_config, decoder_layer_config.res_net_config)
 
-    self._mha_layer_norm = nn.LayerNorm(decoder_layer_config.mha_config.d_model)
-    self._cross_mha_layer_norm = nn.LayerNorm(decoder_layer_config.mha_config.d_model)
+    self._mha_layer_norm = nn.LayerNorm(shared_config.d_model)
+    self._cross_mha_layer_norm = nn.LayerNorm(shared_config.d_model)
   
   def forward(self,
-              x: Tensor # (B, s_1, d_model)
+              x: Tensor, # (B, s_1, d_model)
               cross_x: Tensor # (B, s_2, d_model)
              ):
     assert len(x.size()) == 3

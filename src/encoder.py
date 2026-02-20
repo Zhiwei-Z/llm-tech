@@ -8,6 +8,7 @@ import torch.nn.functional as F
 from device import DEVICE
 from mha import MHA, MHAConfig
 from res_net import ResNet, ResNetConfig
+from shared_config import SharedConfig
 
 @dataclass
 class EncoderLayerConfig:
@@ -22,13 +23,14 @@ are applied after each sub-layer.
 '''
 class EncoderLayer(nn.Module):
     def __init__(self,
+                 shared_config: SharedConfig,
                  encoder_layer_config: EncoderLayerConfig
                  ):
         super().__init__()
-        self.encoder_layer_config = encoder_layer_config
-        self.mha = MHA(encoder_layer_config.mha_config)
-        self.res_net = ResNet(encoder_layer_config.res_net_config)
-        self.mha_layer_norm = nn.LayerNorm(encoder_layer_config.mha_config.d_model)
+        self._encoder_layer_config = encoder_layer_config
+        self.mha = MHA(shared_config, encoder_layer_config.mha_config)
+        self.res_net = ResNet(shared_config, encoder_layer_config.res_net_config)
+        self.mha_layer_norm = nn.LayerNorm(shared_config.d_model)
 
     def forward(self,
                 x: Tensor, # (B, s, d_model)

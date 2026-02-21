@@ -16,20 +16,21 @@ def train(model: nn.Module,
 
     # TODO: add eval code
     for epoch in range(num_epochs):
-        with model.train():
-            for batch_idx, (x, y) in enumerate(train_loader):
-                # x, y are both tensors
-                x, y = x.to(DEVICE), y.to(DEVICE)
+        model.train()
+        for batch_idx, (x, y) in enumerate(train_loader):
+            # x, y are both tensors
+            x, y = x.to(DEVICE), y.to(DEVICE)
 
-                optimizer.zero_grad()
-                logits = model(x)
+            optimizer.zero_grad()
+            logits = model(x)
 
-                loss = loss_fn(logits.view(-1, logits.size(-1)), y.view(-1))
+            loss = loss_fn(logits.view(-1, logits.size(-1)), y.view(-1))
 
-                # Gradient clipping for stability
-                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            loss.backward()
 
-                loss.backward()
-                optimizer.step()
+            # Gradient clipping for stability
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+
+            optimizer.step()
 
         print(f"Epoch {epoch+1}/{num_epochs}, Loss: {loss.item()}")

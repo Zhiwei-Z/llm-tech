@@ -79,7 +79,7 @@ class PoliticsAnalysis(BaseModel):
 political_safety_agent = Agent(
     name="PoliticalSafetyAgent",
     instruction=POLITICAL_SAFETY_INSTRUCTIONS,
-    return_type=PoliticsAnalysis
+    output_type=PoliticsAnalysis
 )
 
 @input_guardrail
